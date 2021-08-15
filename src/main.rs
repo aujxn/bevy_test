@@ -14,6 +14,8 @@ fn main() {
         .add_system(player_action::player_action_system.system())
         .add_system(input::input_system.system())
         .add_system(movement::movement_system.system())
-        .add_event::<(PlayerAction, Vec3)>()
+        .add_system(abilities::dash.system())
+        .add_system(abilities::charges_cooldown_system.system())
+        .add_event::<PlayerAction>()
         .run();
 }
