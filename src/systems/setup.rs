@@ -51,6 +51,6 @@ pub fn setup_system(
         }
     }
 
-    let graph = TileGraph::new(map_size, cell_size);
+    let graph = crate::systems::movement::TileGraph::new(map_size, cell_size);
     commands.spawn().insert(graph);
 }

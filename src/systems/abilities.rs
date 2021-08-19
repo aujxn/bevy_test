@@ -1,5 +1,4 @@
 use crate::components::*;
-use crate::events::*;
 use bevy::prelude::*;
 
 pub fn charges_cooldown_system(
@@ -39,7 +38,7 @@ pub fn dash(
                     // if we don't have any charges then we cannot cast, so just
                     // keep moving towards the dash location
                     if dash_charges.0 == 0 {
-                        *state = CharState::Moving(ability.1);
+                        *state = CharState::Moving(ability.1, None);
                     // if the cast timer is paused then we need to start casting
                     } else if cast_timer.0.paused() && dash_charges.0 > 0 {
                         dash_charges.0 -= 1;
@@ -62,7 +61,7 @@ pub fn dash(
                             transform.translation += dash_range * direction.normalize();
                         }
                         // keep moving toward dash destination
-                        *state = CharState::Moving(ability.1);
+                        *state = CharState::Moving(ability.1, None);
                     // if the cast timer is running and not finished then continue
                     } else {
                         cast_timer.0.tick(time.delta());
