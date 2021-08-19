@@ -30,13 +30,7 @@ pub fn movement_system(
                     ) {
                         // update the state to have the path we chose
                         *state = CharState::Moving(destination, Some(path));
-                        move_char(
-                            &mut graph,
-                            &mut transform,
-                            speed.0,
-                            delta_seconds,
-                            &mut state,
-                        );
+                        graph.move_char(&mut transform, speed.0, delta_seconds, &mut state);
                     } else {
                         *state = CharState::Idle;
                     }
@@ -55,13 +49,7 @@ pub fn movement_system(
                         }
                     }
 
-                    move_char(
-                        &mut graph,
-                        &mut transform,
-                        speed.0,
-                        delta_seconds,
-                        &mut state,
-                    );
+                    graph.move_char(&mut transform, speed.0, delta_seconds, &mut state);
                 }
                 // all other character states can be ignored.
                 // potential optimazation could be to alter
@@ -73,33 +61,9 @@ pub fn movement_system(
     }
 }
 
-fn move_char(
-    tiles: &mut TileGraph,
-    char_transform: &mut Transform,
-    move_speed: f32,
-    delta_seconds: f32,
-    char_state: &mut CharState,
-) {
-    if let CharState::Moving(_, Some(path)) = char_state {
-        if let Some(path_step) = path.front() {
-            let direction = tiles.get_coords(path_step.0, path_step.1) - char_transform.translation;
-            char_transform.translation += move_speed * delta_seconds * direction.normalize();
-            let new_x = char_transform.translation.x;
-            let new_y = char_transform.translation.y;
-
-            if tiles.get_index(new_x, new_y) == *path_step {
-                path.pop_front();
-            }
-        } else {
-            *char_state = CharState::Idle;
-        }
-    }
-}
-
 pub struct TileGraph {
     graph: UnGraphMap<(i32, i32), ()>,
     occupied_tiles: std::collections::HashSet<(i32, i32)>,
-    map_size: i32,
     cell_size: f32,
 }
 
@@ -110,7 +74,13 @@ impl TileGraph {
 
         for x in -map_size..=map_size {
             for y in -map_size..=map_size {
-                graph.add_node((x, y));
+                if (Vec2::new(-150.0, -150.0)
+                    - Vec2::new(x as f32 * cell_size, y as f32 * cell_size))
+                .length()
+                    > 80.0
+                {
+                    graph.add_node((x, y));
+                }
             }
         }
 
@@ -132,7 +102,6 @@ impl TileGraph {
         Self {
             graph,
             occupied_tiles,
-            map_size,
             cell_size,
         }
     }
@@ -155,7 +124,7 @@ impl TileGraph {
             |target| target == end,
             |(_, (e0, e1), _)| {
                 if self.occupied_tiles.contains(&(e0, e1)) {
-                    i32::MAX
+                    10000
                 } else {
                     (e0 - end.0).pow(2) + (e1 - end.1).pow(2)
                 }
@@ -177,6 +146,35 @@ impl TileGraph {
             path.iter().all(|step| !self.occupied_tiles.contains(step))
         } else {
             false
+        }
+    }
+
+    pub fn move_char(
+        &mut self,
+        char_transform: &mut Transform,
+        move_speed: f32,
+        delta_seconds: f32,
+        char_state: &mut CharState,
+    ) {
+        if let CharState::Moving(_, Some(path)) = char_state {
+            if let Some(path_step) = path.front() {
+                let direction =
+                    self.get_coords(path_step.0, path_step.1) - char_transform.translation;
+                let old_x = char_transform.translation.x;
+                let old_y = char_transform.translation.y;
+
+                char_transform.translation += move_speed * delta_seconds * direction.normalize();
+                let new_x = char_transform.translation.x;
+                let new_y = char_transform.translation.y;
+
+                if self.get_index(new_x, new_y) == *path_step {
+                    self.occupied_tiles.remove(&self.get_index(old_x, old_y));
+                    self.occupied_tiles.insert(*path_step);
+                    path.pop_front();
+                }
+            } else {
+                *char_state = CharState::Idle;
+            }
         }
     }
 }
