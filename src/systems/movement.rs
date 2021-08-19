@@ -86,18 +86,10 @@ impl TileGraph {
 
         let nodes: Vec<(i32, i32)> = graph.nodes().collect();
         for (x, y) in nodes {
-            if x != map_size {
-                graph.add_edge((x, y), (x + 1, y), ());
-            }
-            if y != -map_size {
-                graph.add_edge((x, y), (x, y + 1), ());
-            }
-            if x != map_size && y != -map_size {
-                graph.add_edge((x, y), (x + 1, y + 1), ());
-            }
-            if x != -map_size && y != -map_size {
-                graph.add_edge((x, y), (x - 1, y - 1), ());
-            }
+            graph.add_edge((x, y), (x + 1, y), ());
+            graph.add_edge((x, y), (x, y + 1), ());
+            graph.add_edge((x, y), (x + 1, y + 1), ());
+            graph.add_edge((x, y), (x - 1, y + 1), ());
         }
         Self {
             graph,
