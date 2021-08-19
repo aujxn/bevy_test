@@ -40,14 +40,17 @@ pub fn setup_system(
             let x = start_x + (x as f32 * cell_size);
             let y = start_y - (y as f32 * cell_size);
 
-            commands
-                .spawn_bundle(GeometryBuilder::build_as(
-                    &cell,
-                    color,
-                    drawmode,
-                    Transform::from_xyz(x, y, 0.0),
-                ))
-                .insert(Cell);
+            // make an obstacle to path around
+            if (Vec2::new(-150.0, -150.0) - Vec2::new(x, y)).length() > 80.0 {
+                commands
+                    .spawn_bundle(GeometryBuilder::build_as(
+                        &cell,
+                        color,
+                        drawmode,
+                        Transform::from_xyz(x, y, 0.0),
+                    ))
+                    .insert(Cell);
+            }
         }
     }
 
