@@ -118,6 +118,9 @@ impl TileGraph {
                 if self.occupied_tiles.contains(&(e0, e1)) {
                     10000
                 } else {
+                    // to prevent weird paths the cost of moving into
+                    // any tile is the distance that tile is from the
+                    // destination
                     (e0 - end.0).pow(2) + (e1 - end.1).pow(2)
                 }
             },

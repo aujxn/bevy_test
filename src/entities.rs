@@ -38,6 +38,7 @@ impl PlayerBundle {
 
 #[derive(Bundle)]
 pub struct MobBundle {
+    mob_type: Eye,
     mob: Mob,
     health: Health,
     energy: Energy,
@@ -54,6 +55,7 @@ impl MobBundle {
     ) -> Self {
         let texture_handle = assest_server.load("eye.png");
         Self {
+            mob_type: Eye,
             mob: Mob,
             health: Health(100),
             energy: Energy(100),
@@ -68,6 +70,15 @@ impl MobBundle {
         }
     }
 }
+
+/*
+#[derive(Bundle)]
+pub struct EyeMob {
+    mob: Eye,
+    #[bundle]
+    sprite: MobBundle,
+}
+*/
 
 #[derive(Bundle)]
 pub struct DashBundle {

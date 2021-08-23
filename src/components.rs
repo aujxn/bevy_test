@@ -5,6 +5,7 @@ use rustc_hash::FxHashMap;
 // Label components
 pub struct Player;
 pub struct Mob;
+pub struct Eye;
 pub struct Projectile;
 pub struct MainCamera;
 pub struct Dash;
