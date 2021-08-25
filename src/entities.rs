@@ -1,5 +1,6 @@
 use crate::components::*;
 use bevy::prelude::*;
+use bevy_prototype_lyon::prelude::*;
 
 #[derive(Bundle)]
 pub struct PlayerBundle {
@@ -46,13 +47,27 @@ pub struct MobBundle {
     mob_state: CharState,
     #[bundle]
     sprite: SpriteBundle,
+    laser_entity: LaserEntity,
 }
 
 impl MobBundle {
     pub fn new(
         assest_server: &Res<AssetServer>,
         materials: &mut ResMut<Assets<ColorMaterial>>,
+        commands: &mut Commands,
     ) -> Self {
+        let drawmode = DrawMode::Stroke(StrokeOptions::default());
+        let color = ShapeColors::new(Color::RED);
+        let laser_entity = LaserEntity(
+            commands
+                .spawn_bundle(GeometryBuilder::build_as(
+                    &shapes::Line(Vec2::new(0.0, 0.0), Vec2::new(0.0, 100.0)),
+                    color,
+                    drawmode,
+                    Transform::default(),
+                ))
+                .id(),
+        );
         let texture_handle = assest_server.load("eye.png");
         Self {
             mob_type: Eye,
@@ -67,6 +82,7 @@ impl MobBundle {
                 sprite: Sprite::new(Vec2::new(100.0, 100.0)),
                 ..Default::default()
             },
+            laser_entity,
         }
     }
 }

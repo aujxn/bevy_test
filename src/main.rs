@@ -20,6 +20,8 @@ fn main() {
         .add_system(abilities::dash.system())
         .add_system(abilities::charges_cooldown_system.system())
         .add_system(mob_ai::eye_mob_ai_system.system())
+        .add_system(mob_ai::eye_lazer.system())
+        //.add_system(mob_ai::eye_lazer.system())
         .add_event::<PlayerAction>()
         .run();
 }

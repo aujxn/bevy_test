@@ -14,7 +14,8 @@ pub fn setup_system(
     commands.spawn_bundle(UiCameraBundle::default());
     commands.spawn().insert(UserControls::new());
     commands.spawn_bundle(PlayerBundle::new(&asset_server, &mut materials));
-    commands.spawn_bundle(MobBundle::new(&asset_server, &mut materials));
+    let mob_bundle = MobBundle::new(&asset_server, &mut materials, &mut commands);
+    commands.spawn_bundle(mob_bundle);
     commands.spawn_bundle(DashBundle::new());
 
     let map_size = 30;

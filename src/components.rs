@@ -36,6 +36,7 @@ pub struct MaxCharges(pub i64);
 pub struct CastTime(pub f32);
 pub struct CastTimer(pub Timer);
 pub struct CooldownTimer(pub Timer);
+pub struct LaserEntity(pub Entity);
 
 #[derive(PartialEq, Clone, Copy)]
 pub struct Coords(pub Vec3);
