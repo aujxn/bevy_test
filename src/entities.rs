@@ -48,6 +48,10 @@ pub struct MobBundle {
     #[bundle]
     sprite: SpriteBundle,
     laser_entity: LaserEntity,
+    cast_time: CastTime,
+    cast_timer: CastTimer,
+    channel_time: ChannelTime,
+    channel_timer: ChannelTimer,
 }
 
 impl MobBundle {
@@ -69,6 +73,14 @@ impl MobBundle {
                 .id(),
         );
         let texture_handle = assest_server.load("eye.png");
+
+        let channel_time = ChannelTime(3.0);
+        let cast_time = CastTime(1.0);
+        let mut channel_timer = ChannelTimer(Timer::from_seconds(channel_time.0, true));
+        channel_timer.0.pause();
+        let mut cast_timer = CastTimer(Timer::from_seconds(cast_time.0, false));
+        cast_timer.0.pause();
+
         Self {
             mob_type: Eye,
             mob: Mob,
@@ -83,18 +95,13 @@ impl MobBundle {
                 ..Default::default()
             },
             laser_entity,
+            channel_time,
+            channel_timer,
+            cast_time,
+            cast_timer,
         }
     }
 }
-
-/*
-#[derive(Bundle)]
-pub struct EyeMob {
-    mob: Eye,
-    #[bundle]
-    sprite: MobBundle,
-}
-*/
 
 #[derive(Bundle)]
 pub struct DashBundle {

@@ -6,11 +6,9 @@ use rustc_hash::FxHashMap;
 pub struct Player;
 pub struct Mob;
 pub struct Eye;
-pub struct Projectile;
 pub struct MainCamera;
 pub struct Dash;
 pub struct Cell;
-pub struct Impassable;
 
 // Player and mob components
 pub struct Health(pub i64);
@@ -23,19 +21,24 @@ pub struct MovementSpeed(pub f32);
 pub enum CastAbility {
     Dash,
     Shoot,
+    EyeMobZap,
 }
 
 #[derive(PartialEq, Clone, Copy)]
 pub enum ChannelAbility {
-    Lazer,
+    Laser,
+    EyeMobTarget,
 }
 
-pub struct Cooldown(pub f32);
 pub struct Charges(pub i64);
 pub struct MaxCharges(pub i64);
 pub struct CastTime(pub f32);
 pub struct CastTimer(pub Timer);
+pub struct ChannelTime(pub f32);
+pub struct ChannelTimer(pub Timer);
+pub struct Cooldown(pub f32);
 pub struct CooldownTimer(pub Timer);
+#[derive(Clone, Copy)]
 pub struct LaserEntity(pub Entity);
 
 #[derive(PartialEq, Clone, Copy)]
@@ -100,7 +103,7 @@ impl UserControls {
         mouse.insert(MouseButton::Right, Action::Move);
         keyboard.insert(KeyCode::Q, Action::Cast(CastAbility::Dash));
         keyboard.insert(KeyCode::W, Action::Cast(CastAbility::Shoot));
-        keyboard.insert(KeyCode::E, Action::Channel(ChannelAbility::Lazer));
+        keyboard.insert(KeyCode::E, Action::Channel(ChannelAbility::Laser));
 
         Self { mouse, keyboard }
     }
