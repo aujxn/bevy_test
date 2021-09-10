@@ -62,9 +62,11 @@ pub fn movement_system(
 }
 
 pub struct TileGraph {
-    graph: UnGraphMap<(i32, i32), ()>,
-    occupied_tiles: std::collections::HashSet<(i32, i32)>,
+    graph: UnGraphMap<(i32, i32, i32), ()>,
+    occupied_tiles: std::collections::HashSet<(i32, i32, i32)>,
     cell_size: f32,
+    axial_to_world_transformation: bevy::math::Mat2,
+    world_to_axial_transformation: bevy::math::Mat2,
 }
 
 impl TileGraph {
@@ -72,61 +74,82 @@ impl TileGraph {
         let mut graph = UnGraphMap::new();
         let occupied_tiles = std::collections::HashSet::new();
 
-        for x in -map_size..=map_size {
-            for y in -map_size..=map_size {
-                if (Vec2::new(-150.0, -150.0)
-                    - Vec2::new(x as f32 * cell_size, y as f32 * cell_size))
-                .length()
-                    > 80.0
-                {
-                    graph.add_node((x, y));
-                }
-            }
+        let tiles = (-map_size..=map_size)
+            .map(|x| (-map_size..=map_size).map(move |y| (x, y)))
+            .flatten()
+            .map(|(x, y)| (-map_size..=map_size).map(move |z| (x, y, z)))
+            .flatten()
+            .filter(|coords| coords.0 + coords.1 + coords.2 == 0);
+
+        for tile in tiles {
+            graph.add_node(tile);
         }
 
-        let nodes: Vec<(i32, i32)> = graph.nodes().collect();
-        for (x, y) in nodes {
-            if x != map_size {
-                graph.add_edge((x, y), (x + 1, y), ());
-            }
-            if y != -map_size {
-                graph.add_edge((x, y), (x, y + 1), ());
-            }
-            if x != map_size && y != -map_size {
-                graph.add_edge((x, y), (x + 1, y + 1), ());
-            }
-            if x != -map_size && y != -map_size {
-                graph.add_edge((x, y), (x - 1, y - 1), ());
-            }
+        let nodes: Vec<(i32, i32, i32)> = graph.nodes().collect();
+        // adds every edge two times but w/e it's fine
+        for (x, y, z) in nodes {
+            graph.add_edge((x, y, z), (x + 1, y - 1, z), ());
+            graph.add_edge((x, y, z), (x + 1, y, z - 1), ());
+            graph.add_edge((x, y, z), (x, y + 1, z - 1), ());
+            graph.add_edge((x, y, z), (x - 1, y + 1, z), ());
+            graph.add_edge((x, y, z), (x - 1, y, z + 1), ());
+            graph.add_edge((x, y, z), (x, y - 1, z + 1), ());
         }
+
+        let root3 = 3.0_f32.sqrt();
+        let q_basis = Vec2::new(3.0 / 2.0, root3 / 2.0);
+        let r_basis = Vec2::new(0.0, root3);
+        let axial_to_world_transformation = bevy::math::Mat2::from_cols(q_basis, r_basis);
+        let world_to_axial_transformation = axial_to_world_transformation.inverse();
+
         Self {
             graph,
             occupied_tiles,
             cell_size,
+            axial_to_world_transformation,
+            world_to_axial_transformation,
         }
     }
 
-    pub fn get_index(&self, x: f32, y: f32) -> (i32, i32) {
-        let x = (x / self.cell_size).round() as i32;
-        let y = (y / self.cell_size).round() as i32;
-        (x, y)
+    /******************************************************************/
+    /* Conversions between coordinate systems that are useful         */
+    /******************************************************************/
+    pub fn world_to_cube(&self, coords: (f32, f32)) -> (i32, i32, i32) {
+        TileGraph::axial_to_cube(self.world_to_axial(coords))
+    }
+    pub fn world_to_axial(&self, coords: (f32, f32)) -> (i32, i32) {
+        let vec = (self.world_to_axial_transformation * Vec2::new(coords.0, coords.1)
+            / self.cell_size)
+            .round();
+        (vec.x as i32, vec.y as i32)
+    }
+    pub fn cube_to_world(&self, coords: (i32, i32, i32)) -> (f32, f32) {
+        self.axial_to_world(TileGraph::cube_to_axial(coords))
+    }
+    pub fn cube_to_axial(coords: (i32, i32, i32)) -> (i32, i32) {
+        (coords.0, coords.2)
+    }
+    pub fn axial_to_world(&self, coords: (i32, i32)) -> (f32, f32) {
+        let vec = self.cell_size
+            * self.axial_to_world_transformation
+            * Vec2::new(coords.0 as f32, coords.1 as f32);
+        (vec.x, vec.y)
+    }
+    pub fn axial_to_cube(coords: (i32, i32)) -> (i32, i32, i32) {
+        (coords.0, -coords.0 - coords.1, coords.1)
     }
 
-    pub fn get_coords(&self, x: i32, y: i32) -> Vec3 {
-        Vec3::new(x as f32 * self.cell_size, y as f32 * self.cell_size, 1.0)
-    }
-
-    pub fn path(&self, start: (f32, f32), end: (f32, f32)) -> Option<VecDeque<(i32, i32)>> {
-        let end = self.get_index(end.0, end.1);
+    pub fn path(&self, start: (f32, f32), end: (f32, f32)) -> Option<VecDeque<(i32, i32, i32)>> {
+        let end = self.world_to_cube(end);
         if let Some((_, path)) = petgraph::algo::astar(
             &self.graph,
-            self.get_index(start.0, start.1),
+            self.world_to_cube(start),
             |target| target == end,
-            |(_, (e0, e1), _)| {
-                if self.occupied_tiles.contains(&(e0, e1)) {
+            |(_, tile, _)| {
+                if self.occupied_tiles.contains(&tile) {
                     10000
                 } else {
-                    (e0 - end.0).pow(2) + (e1 - end.1).pow(2)
+                    1
                 }
             },
             |_| 0,
@@ -158,8 +181,8 @@ impl TileGraph {
     ) {
         if let CharState::Moving(_, Some(path)) = char_state {
             if let Some(path_step) = path.front() {
-                let direction =
-                    self.get_coords(path_step.0, path_step.1) - char_transform.translation;
+                let (x, y) = self.cube_to_world(*path_step);
+                let direction = Vec3::new(x, y, 0.0) - char_transform.translation;
                 let old_x = char_transform.translation.x;
                 let old_y = char_transform.translation.y;
 
@@ -167,8 +190,9 @@ impl TileGraph {
                 let new_x = char_transform.translation.x;
                 let new_y = char_transform.translation.y;
 
-                if self.get_index(new_x, new_y) == *path_step {
-                    self.occupied_tiles.remove(&self.get_index(old_x, old_y));
+                if self.world_to_cube((new_x, new_y)) == *path_step {
+                    self.occupied_tiles
+                        .remove(&self.world_to_cube((old_x, old_y)));
                     self.occupied_tiles.insert(*path_step);
                     path.pop_front();
                 }
