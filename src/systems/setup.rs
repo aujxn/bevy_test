@@ -1,5 +1,6 @@
 use crate::components::*;
 use crate::entities::*;
+use benimator::*;
 use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::*;
 
@@ -7,6 +8,8 @@ pub fn setup_system(
     mut commands: Commands,
     mut materials: ResMut<Assets<ColorMaterial>>,
     asset_server: Res<AssetServer>,
+    mut animations: ResMut<Assets<SpriteSheetAnimation>>,
+    mut textures: ResMut<Assets<TextureAtlas>>,
 ) {
     commands
         .spawn_bundle(OrthographicCameraBundle::new_2d())
@@ -17,6 +20,23 @@ pub fn setup_system(
     let mob_bundle = MobBundle::new(&asset_server, &mut materials, &mut commands);
     commands.spawn_bundle(mob_bundle);
     commands.spawn_bundle(DashBundle::new());
+
+    let animation_handle = animations.add(SpriteSheetAnimation::from_range(
+        0..=2,
+        std::time::Duration::from_millis(100),
+    ));
+    commands
+        .spawn_bundle(SpriteSheetBundle {
+            texture_atlas: textures.add(TextureAtlas::from_grid(
+                asset_server.load("fire.png"),
+                Vec2::new(230.0, 260.0),
+                3,
+                1,
+            )),
+            ..Default::default()
+        })
+        .insert(animation_handle)
+        .insert(Play);
 
     let map_size = 30;
     let cell_size = 35.0;
