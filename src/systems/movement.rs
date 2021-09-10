@@ -62,9 +62,29 @@ pub fn movement_system(
 }
 
 pub struct TileGraph {
+    // TileGraph is for keeping track of every tile that *can*
+    // be occupied. Impassable tiles are not stored here.
     graph: UnGraphMap<(i32, i32, i32), ()>,
+
+    // Keeps track of which tiles have units (player or mobs) in them.
+    // This way when we calculate a path we can traverse only empty tiles.
     occupied_tiles: std::collections::HashSet<(i32, i32, i32)>,
+
+    // How large each tile is. Length from center to vertex of hexagon (radius).
     cell_size: f32,
+
+    // Positions in the game world are (x, y) floats and the indices
+    // of our hexagon tiles are (x, y, z) integers because a hexagon
+    // gride has 3 axes. Our tile positions can also be described
+    // using only 2 of those 3 integers in an axial grid.
+    //
+    // See: https://www.redblobgames.com/grids/hexagons/#coordinates
+    // for more information about the coordinate systems.
+    //
+    // These two 2x2 matrices are linear transformations that act
+    // as a change of basis between "real world" coordinates (floats)
+    // and the axial coordinates of the tile in the graph. Each matrix
+    // is the inverse of the other.
     axial_to_world_transformation: bevy::math::Mat2,
     world_to_axial_transformation: bevy::math::Mat2,
 }
@@ -74,6 +94,9 @@ impl TileGraph {
         let mut graph = UnGraphMap::new();
         let occupied_tiles = std::collections::HashSet::new();
 
+        // To make a full TileGraph using cubic coordinates,
+        // (x, y, z) for each tile, x + y + z == 0 must be
+        // satisfied to be a valid tile coordinate
         let tiles = (-map_size..=map_size)
             .map(|x| (-map_size..=map_size).map(move |y| (x, y)))
             .flatten()
@@ -96,6 +119,9 @@ impl TileGraph {
             graph.add_edge((x, y, z), (x, y - 1, z + 1), ());
         }
 
+        // https://www.redblobgames.com/grids/hexagons/#hex-to-pixel
+        // https://www.redblobgames.com/grids/hexagons/#pixel-to-hex
+        // above links describe what is happening here
         let root3 = 3.0_f32.sqrt();
         let q_basis = Vec2::new(3.0 / 2.0, root3 / 2.0);
         let r_basis = Vec2::new(0.0, root3);
@@ -139,6 +165,9 @@ impl TileGraph {
         (coords.0, -coords.0 - coords.1, coords.1)
     }
 
+    // Args: the world coordinates of a unit location (start) and the world coordinates
+    // of where the unit is trying to move to (end).
+    // Returns: A list of tile indices that the unit can traverse to get there.
     pub fn path(&self, start: (f32, f32), end: (f32, f32)) -> Option<VecDeque<(i32, i32, i32)>> {
         let end = self.world_to_cube(end);
         if let Some((_, path)) = petgraph::algo::astar(
@@ -164,6 +193,8 @@ impl TileGraph {
         }
     }
 
+    // Checks the path that a unit is trying to traverse and checks that the
+    // path is still valid (all tiles in the path remain unoccupied)
     pub fn validate(&self, char_state: &mut CharState) -> bool {
         if let CharState::Moving(_, Some(path)) = char_state {
             path.iter().all(|step| !self.occupied_tiles.contains(step))
@@ -172,6 +203,8 @@ impl TileGraph {
         }
     }
 
+    // Updates the unit's sprite along the intended path. Path should have been
+    // validated by the movement system before getting called.
     pub fn move_char(
         &mut self,
         char_transform: &mut Transform,
@@ -182,7 +215,7 @@ impl TileGraph {
         if let CharState::Moving(_, Some(path)) = char_state {
             if let Some(path_step) = path.front() {
                 let (x, y) = self.cube_to_world(*path_step);
-                let direction = Vec3::new(x, y, 0.0) - char_transform.translation;
+                let direction = Vec3::new(x, y, 1.0) - char_transform.translation;
                 let old_x = char_transform.translation.x;
                 let old_y = char_transform.translation.y;
 
@@ -190,6 +223,8 @@ impl TileGraph {
                 let new_x = char_transform.translation.x;
                 let new_y = char_transform.translation.y;
 
+                // if our new position is inside the tile we were moving to,
+                // pop that tile off the path queue and update the occupied_tiles
                 if self.world_to_cube((new_x, new_y)) == *path_step {
                     self.occupied_tiles
                         .remove(&self.world_to_cube((old_x, old_y)));
@@ -197,6 +232,7 @@ impl TileGraph {
                     path.pop_front();
                 }
             } else {
+                // when the path is empty then we aren't moving anymore
                 *char_state = CharState::Idle;
             }
         }

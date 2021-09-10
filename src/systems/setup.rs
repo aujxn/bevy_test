@@ -2,7 +2,6 @@ use crate::components::*;
 use crate::entities::*;
 use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::*;
-use itertools::Itertools;
 
 pub fn setup_system(
     mut commands: Commands,
