@@ -47,7 +47,7 @@ pub enum CharState {
     // unit (player or mob) and if the pathing system
     // has run its path is saved in the vec with
     // move-tile coords.
-    Moving(Coords, Option<std::collections::VecDeque<(i32, i32)>>),
+    Moving(Coords, Option<std::collections::VecDeque<(i32, i32, i32)>>),
     Channeling((ChannelAbility, Coords)),
     Idle,
 }
