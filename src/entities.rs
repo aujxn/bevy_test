@@ -15,10 +15,7 @@ pub struct PlayerBundle {
 }
 
 impl PlayerBundle {
-    pub fn new(
-        assest_server: &Res<AssetServer>,
-        materials: &mut ResMut<Assets<ColorMaterial>>,
-    ) -> Self {
+    pub fn new(assest_server: &Res<AssetServer>) -> Self {
         let texture_handle = assest_server.load("player.png");
         Self {
             player: Player,
@@ -28,9 +25,8 @@ impl PlayerBundle {
             movement_speed: MovementSpeed(300.0),
             player_state: CharState::Idle,
             sprite: SpriteBundle {
-                material: materials.add(texture_handle.into()),
-                transform: Transform::from_xyz(0.0, -50.0, 1.0),
-                sprite: Sprite::new(Vec2::new(160.0, 120.0)),
+                texture: texture_handle,
+                transform: Transform::from_xyz(0.0, -50.0, 1.0).with_scale(Vec3::splat(0.25)),
                 ..Default::default()
             },
         }
@@ -55,18 +51,12 @@ pub struct MobBundle {
 }
 
 impl MobBundle {
-    pub fn new(
-        assest_server: &Res<AssetServer>,
-        materials: &mut ResMut<Assets<ColorMaterial>>,
-        commands: &mut Commands,
-    ) -> Self {
-        let drawmode = DrawMode::Stroke(StrokeOptions::default());
-        let color = ShapeColors::new(Color::RED);
+    pub fn new(assest_server: &Res<AssetServer>, commands: &mut Commands) -> Self {
+        let drawmode = DrawMode::Stroke(StrokeMode::new(Color::RED, 1.0));
         let laser_entity = LaserEntity(
             commands
                 .spawn_bundle(GeometryBuilder::build_as(
                     &shapes::Line(Vec2::new(0.0, 0.0), Vec2::new(0.0, 100.0)),
-                    color,
                     drawmode,
                     Transform::default(),
                 ))
@@ -89,9 +79,12 @@ impl MobBundle {
             movement_speed: MovementSpeed(300.0),
             mob_state: CharState::Idle,
             sprite: SpriteBundle {
-                material: materials.add(texture_handle.into()),
+                texture: texture_handle,
                 transform: Transform::from_xyz(100.0, 100.0, 1.0),
-                sprite: Sprite::new(Vec2::new(100.0, 100.0)),
+                sprite: Sprite {
+                    custom_size: Some(Vec2::splat(100.0)),
+                    ..Default::default()
+                },
                 ..Default::default()
             },
             laser_entity,

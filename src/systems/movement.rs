@@ -18,49 +18,49 @@ pub fn movement_system(
     mut q_graph: Query<&mut TileGraph>,
 ) {
     let delta_seconds = time.delta_seconds();
-    if let Ok(mut graph) = q_graph.single_mut() {
-        for (mut state, speed, mut transform) in query.iter_mut() {
-            match *state {
-                // units that have entered moving state but no path
-                // has been calculated yet
-                CharState::Moving(destination, None) => {
+    let mut graph = q_graph.single_mut();
+    for (mut state, speed, mut transform) in query.iter_mut() {
+        match *state {
+            // units that have entered moving state but no path
+            // has been calculated yet
+            CharState::Moving(destination, None) => {
+                if let Some(path) = graph.path(
+                    (transform.translation.x, transform.translation.y),
+                    (destination.0.x, destination.0.y),
+                ) {
+                    // update the state to have the path we chose
+                    *state = CharState::Moving(destination, Some(path));
+                    graph.move_char(&mut transform, speed.0, delta_seconds, &mut state);
+                } else {
+                    *state = CharState::Idle;
+                }
+            }
+            // units that already have a path
+            CharState::Moving(destination, Some(_)) => {
+                // check if our current path is valid otherwise get a new one
+                if !graph.validate(&mut state) {
                     if let Some(path) = graph.path(
                         (transform.translation.x, transform.translation.y),
                         (destination.0.x, destination.0.y),
                     ) {
-                        // update the state to have the path we chose
                         *state = CharState::Moving(destination, Some(path));
-                        graph.move_char(&mut transform, speed.0, delta_seconds, &mut state);
                     } else {
                         *state = CharState::Idle;
                     }
                 }
-                // units that already have a path
-                CharState::Moving(destination, Some(_)) => {
-                    // check if our current path is valid otherwise get a new one
-                    if !graph.validate(&mut state) {
-                        if let Some(path) = graph.path(
-                            (transform.translation.x, transform.translation.y),
-                            (destination.0.x, destination.0.y),
-                        ) {
-                            *state = CharState::Moving(destination, Some(path));
-                        } else {
-                            *state = CharState::Idle;
-                        }
-                    }
 
-                    graph.move_char(&mut transform, speed.0, delta_seconds, &mut state);
-                }
-                // all other character states can be ignored.
-                // potential optimazation could be to alter
-                // the query so it only selects characters with
-                // the correct state
-                _ => (),
+                graph.move_char(&mut transform, speed.0, delta_seconds, &mut state);
             }
+            // all other character states can be ignored.
+            // potential optimazation could be to alter
+            // the query so it only selects characters with
+            // the correct state
+            _ => (),
         }
     }
 }
 
+#[derive(Component)]
 pub struct TileGraph {
     graph: UnGraphMap<(i32, i32), ()>,
     occupied_tiles: std::collections::HashSet<(i32, i32)>,

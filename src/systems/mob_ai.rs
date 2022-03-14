@@ -15,7 +15,7 @@ use bevy::prelude::*;
 /// 5. If still in range start targeting again otherwise go to 1.
 pub fn eye_mob_ai_system(
     mut query: QuerySet<(
-        Query<
+        QueryState<
             (
                 &Transform,
                 &mut CharState,
@@ -27,12 +27,12 @@ pub fn eye_mob_ai_system(
             ),
             With<Eye>,
         >,
-        Query<&Transform, With<Player>>,
+        QueryState<&Transform, With<Player>>,
     )>,
     time: Res<Time>,
     mut laser_event_writer: EventWriter<LaserEvent>,
 ) {
-    let player_coords = query.q1().single().unwrap().translation;
+    let player_coords = query.q1().single().translation;
 
     let range = 800.0;
     let buffer = 250.0;
@@ -45,7 +45,7 @@ pub fn eye_mob_ai_system(
         cast_time,
         mut cast_timer,
         laser_entity,
-    ) in query.q0_mut().iter_mut()
+    ) in query.q0().iter_mut()
     {
         match *mob_state {
             CharState::Moving(destination, _) => {
@@ -115,7 +115,7 @@ pub enum LaserEvent {
 /// This system updates the tracking laser from the eye mob to the player. The eye mob system
 /// sends LaserEvents when the mob changes between moving and channeling/targeting.
 pub fn eye_laser(
-    mut query: Query<(&mut Transform, &mut Visible)>,
+    mut query: Query<(&mut Transform, &mut Visibility)>,
     mut laser_event_reader: EventReader<LaserEvent>,
 ) {
     for laser_event in laser_event_reader.iter() {
@@ -132,18 +132,12 @@ pub fn eye_laser(
                     transform.scale = scale;
                     transform.rotation = quat;
                     transform.translation = *mob_coords;
-                    *visible = Visible {
-                        is_visible: true,
-                        is_transparent: false,
-                    };
+                    *visible = Visibility { is_visible: true };
                 }
             }
             LaserEvent::Off(LaserEntity(id)) => {
                 if let Ok((_transform, mut visible)) = query.get_mut(*id) {
-                    *visible = Visible {
-                        is_visible: false,
-                        is_transparent: false,
-                    };
+                    *visible = Visibility { is_visible: false };
                 }
             }
         }

@@ -3,48 +3,66 @@ use bevy::prelude::*;
 use rustc_hash::FxHashMap;
 
 // Label components
+#[derive(Component)]
 pub struct Player;
+#[derive(Component)]
 pub struct Mob;
+#[derive(Component)]
 pub struct Eye;
+#[derive(Component)]
 pub struct MainCamera;
+#[derive(Component)]
 pub struct Dash;
+#[derive(Component)]
 pub struct Cell;
 
 // Player and mob components
+#[derive(Component)]
 pub struct Health(pub i64);
+#[derive(Component)]
 pub struct Energy(pub i64);
+#[derive(Component)]
 pub struct Experience(pub i64);
+#[derive(Component)]
 pub struct MovementSpeed(pub f32);
 
 // Ability components
-#[derive(PartialEq, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy, Component)]
 pub enum CastAbility {
     Dash,
     Shoot,
     EyeMobZap,
 }
 
-#[derive(PartialEq, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy, Component)]
 pub enum ChannelAbility {
     Laser,
     EyeMobTarget,
 }
 
+#[derive(Component)]
 pub struct Charges(pub i64);
+#[derive(Component)]
 pub struct MaxCharges(pub i64);
+#[derive(Component)]
 pub struct CastTime(pub f32);
+#[derive(Component)]
 pub struct CastTimer(pub Timer);
+#[derive(Component)]
 pub struct ChannelTime(pub f32);
+#[derive(Component)]
 pub struct ChannelTimer(pub Timer);
+#[derive(Component)]
 pub struct Cooldown(pub f32);
+#[derive(Component)]
 pub struct CooldownTimer(pub Timer);
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Component)]
 pub struct LaserEntity(pub Entity);
 
-#[derive(PartialEq, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy, Component)]
 pub struct Coords(pub Vec3);
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Component)]
 pub enum CharState {
     Casting((CastAbility, Coords)),
 
@@ -90,6 +108,7 @@ impl From<PlayerAction> for CharState {
 }
 
 // Map keyboard and mouse into player actions
+#[derive(Component)]
 pub struct UserControls {
     pub mouse: FxHashMap<MouseButton, Action>,
     pub keyboard: FxHashMap<KeyCode, Action>,

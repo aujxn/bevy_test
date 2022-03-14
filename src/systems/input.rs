@@ -21,23 +21,22 @@ pub fn input_system(
         let p = pos - size / 2.0;
 
         // assuming there is exactly one main camera entity, so this is OK
-        let camera_transform = q_camera.single().unwrap();
+        let camera_transform = q_camera.single();
 
         // apply the camera transform, result is the `world coords` of the mouse
         let pos_wld = camera_transform.compute_matrix() * p.extend(0.0).extend(1.0);
         let mouse_world_coordinates = Vec3::new(pos_wld.x, pos_wld.y, 1.0);
 
-        if let Ok(controls) = q_controls.single() {
-            for mouse_button in mouse_input.get_pressed() {
-                if let Some(action) = controls.mouse.get(mouse_button) {
-                    player_action.send(PlayerAction::new(*action, mouse_world_coordinates));
-                }
+        let controls = q_controls.single();
+        for mouse_button in mouse_input.get_pressed() {
+            if let Some(action) = controls.mouse.get(mouse_button) {
+                player_action.send(PlayerAction::new(*action, mouse_world_coordinates));
             }
+        }
 
-            for key in keyboard_input.get_pressed() {
-                if let Some(action) = controls.keyboard.get(key) {
-                    player_action.send(PlayerAction::new(*action, mouse_world_coordinates));
-                }
+        for key in keyboard_input.get_pressed() {
+            if let Some(action) = controls.keyboard.get(key) {
+                player_action.send(PlayerAction::new(*action, mouse_world_coordinates));
             }
         }
     }
